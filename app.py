@@ -451,11 +451,7 @@ def main() -> None:
         st.markdown("---")
         col1, col2, col3 = st.columns([1, 2, 1])
         with col2:
-            st.image(
-                "assets/arnold_submit_weights.png",
-                caption="Do it! Pump those weights and submit them!",
-                use_container_width=True
-            )
+            st.image("assets/arnold_submit_weights.png", use_container_width=True)
 
 
 if __name__ == "__main__":
