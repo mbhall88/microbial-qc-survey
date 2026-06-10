@@ -242,14 +242,30 @@ def main() -> None:
     _init_state()
 
     st.markdown('<h1 class="main-title">Microbial QC Pipeline Priorities</h1>', unsafe_allow_html=True)
-    st.markdown(
-        '<p class="subtitle">Set how much each assembly-QC metric should matter. '
-        'Your weights help establish a <b>community-choice baseline</b> for ranking '
-        'read-trimming and quality-filtering pipelines in an upcoming microbial '
-        'genomics benchmark.</p>',
-        unsafe_allow_html=True,
-    )
     st.caption("Responses are anonymous and used for research.")
+
+    # Background context
+    st.markdown(
+        """
+        ### About This Study
+        We are conducting a benchmarking study to evaluate different Nanopore read trimming and quality-filtering tools (such as Dorado, Filtlong, and others) for microbial genome assembly. 
+        
+        Throughout our analysis, it has become evident that no single pipeline configuration performs perfectly across all possible quality measures. For example, a tool might produce great contiguity and low mismatch errors, but its read-length targeting can aggressively filter out the short reads necessary to assemble small plasmids. 
+        
+        To establish a transparent, community-choice baseline for our paper's pipeline ranking, we are surveying the microbial genomics and bioinformatics community to ask how you prioritize these varying aspects of an assembly. The aggregated consensus will form the default weighting baseline.
+        """
+    )
+
+    # Detailed metrics explanation in an expander
+    with st.expander("Explore the Four Key Metrics in Detail"):
+        st.markdown(
+            """
+            - **Mismatches and Indels (Assembly Errors):** Tracks the base-level accuracy of the assembly by measuring overall sequencing errors (per 100 kbp). It captures how effectively the pre-processing tools remove noisy data that would otherwise lead to false positive/negative variant calls and assembly-level inaccuracies.
+            - **Number of Contaminants:** Measures the pipeline's ability to trim or filter out barcode and adapter sequences. Some trimming and filtering pipelines allow contaminants to slip through into the final assembly while others successfully remove them.
+            - **Assembly Contiguity (NGA50):** A reference-aware version of the N50 metric, assessing the fragmentation of the assembly. It is the length of an aligned block such that all aligned blocks of at least this length cover at least 50% of the reference. NGA50 is normalized to total genome size so we can compare across samples of differing sizes.
+            - **Number of Missed Contigs:** Evaluates whether the pipeline accurately captures the entire genome, with a specific focus on the recovery of small plasmids (since highly aggressive quality-filtering tools can inadvertently cause entire small plasmids to be lost from the final assembly).
+            """
+        )
 
     st.subheader("Weight the metrics (must total 100)")
     weights = render_sliders()

@@ -19,10 +19,10 @@ METRIC_REPLICON = "replicon"
 # Per-metric metadata. direction "higher" => higher raw value is better;
 # "lower" => lower raw value is better.
 METRICS = [
-    {"id": METRIC_ACCURACY,   "label": "Assembly Accuracy (Mismatches & Indels)",          "direction": "lower"},
+    {"id": METRIC_ACCURACY,   "label": "Mismatches and Indels (Assembly Errors)",           "direction": "lower"},
     {"id": METRIC_CONTIGUITY, "label": "Assembly Contiguity (NGA50)",                       "direction": "higher"},
-    {"id": METRIC_DECONTAM,   "label": "Contamination Removal (Residual Adapters/Barcodes)","direction": "lower"},
-    {"id": METRIC_REPLICON,   "label": "Missed Replicons (Chromosomes & Plasmids)",         "direction": "lower"},
+    {"id": METRIC_DECONTAM,   "label": "Number of Contaminants (Residual Adapters/Barcodes)","direction": "lower"},
+    {"id": METRIC_REPLICON,   "label": "Number of Missed Contigs (Chromosomes & Plasmids)",  "direction": "lower"},
 ]
 
 METRIC_IDS = [m["id"] for m in METRICS]
