@@ -71,6 +71,7 @@ def render_sliders() -> dict:
             metric["label"],
             min_value=0,
             max_value=int(slider_cap(metric_id, weights)),
+            value=int(weights[metric_id]),
             key=_weight_key(metric_id),
             on_change=_on_slider_change,
             args=(metric_id,),
