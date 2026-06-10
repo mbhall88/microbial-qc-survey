@@ -63,15 +63,16 @@ def _on_slider_change(metric_id: str) -> None:
 
 
 def render_sliders() -> dict:
-    """Render the four budget-capped sliders. Returns the current weights dict."""
+    """Render the four budget-capped number inputs. Returns the current weights dict."""
     weights = _current_weights()
     for metric in data.METRICS:
         metric_id = metric["id"]
-        st.slider(
+        st.number_input(
             metric["label"],
             min_value=0,
-            max_value=int(slider_cap(metric_id, weights)),
+            max_value=100,
             value=int(weights[metric_id]),
+            step=1,
             key=_weight_key(metric_id),
             on_change=_on_slider_change,
             args=(metric_id,),
