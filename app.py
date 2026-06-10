@@ -68,6 +68,12 @@ def _on_walk_raw_change(m_id: str, direction: str) -> None:
     worst_val = st.session_state[f"walk_worst_{m_id}"]
     best_val = st.session_state[f"walk_best_{m_id}"]
 
+    if m_id in ("decontam", "replicon"):
+        raw_val = int(raw_val)
+        worst_val = int(worst_val)
+        best_val = int(best_val)
+        st.session_state[f"walk_raw_{m_id}"] = raw_val
+
     if direction == "lower":
         if raw_val < best_val:
             st.session_state[f"walk_best_{m_id}"] = raw_val
@@ -85,6 +91,12 @@ def _on_walk_worst_change(m_id: str, direction: str) -> None:
     worst_val = st.session_state[f"walk_worst_{m_id}"]
     best_val = st.session_state[f"walk_best_{m_id}"]
 
+    if m_id in ("decontam", "replicon"):
+        raw_val = int(raw_val)
+        worst_val = int(worst_val)
+        best_val = int(best_val)
+        st.session_state[f"walk_worst_{m_id}"] = worst_val
+
     if direction == "lower":
         if worst_val < raw_val:
             st.session_state[f"walk_worst_{m_id}"] = raw_val
@@ -101,6 +113,12 @@ def _on_walk_best_change(m_id: str, direction: str) -> None:
     raw_val = st.session_state[f"walk_raw_{m_id}"]
     worst_val = st.session_state[f"walk_worst_{m_id}"]
     best_val = st.session_state[f"walk_best_{m_id}"]
+
+    if m_id in ("decontam", "replicon"):
+        raw_val = int(raw_val)
+        worst_val = int(worst_val)
+        best_val = int(best_val)
+        st.session_state[f"walk_best_{m_id}"] = best_val
 
     if direction == "lower":
         if best_val > raw_val:
@@ -156,8 +174,8 @@ def render_calculation_walkthrough(weights: dict) -> None:
     WALK_CONFIG = {
         "accuracy": {"step": 0.1, "format": "%.2f"},
         "contiguity": {"step": 0.001, "format": "%.3f"},
-        "decontam": {"step": 1.0, "format": "%d"},
-        "replicon": {"step": 1.0, "format": "%d"},
+        "decontam": {"step": 1, "format": "%d"},
+        "replicon": {"step": 1, "format": "%d"},
     }
 
     st.markdown("### Interactive Score Calculator")
