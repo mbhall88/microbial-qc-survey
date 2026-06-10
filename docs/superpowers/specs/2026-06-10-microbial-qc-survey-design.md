@@ -95,7 +95,7 @@ microbial-qc-survey/
    - Assembly Accuracy (Mismatches & Indels)
    - Assembly Contiguity (NGA50)
    - Contamination Removal (Residual Adapters/Barcodes)
-   - Multi-Replicon Recovery (Missed Small Plasmids)
+   - Missed Replicons (Chromosomes & Plasmids)
 4. **Live leaderboard** — `st.dataframe` of pipelines re-ranked by current weights.
 5. **Submit Weights to Study** button + success toast.
 
@@ -111,7 +111,7 @@ microbial-qc-survey/
 ## 7. Data flow
 
 ```
-sliders ──► weights {w_accuracy, w_contiguity, w_decontam, w_plasmid}
+sliders ──► weights {w_accuracy, w_contiguity, w_decontam, w_replicon}
                 │
                 ▼ (every rerun)
    normalize_metrics(data.raw) ─► score_pipelines(normalized, weights)
@@ -120,12 +120,12 @@ sliders ──► weights {w_accuracy, w_contiguity, w_decontam, w_plasmid}
         st.dataframe leaderboard (sorted by score desc, rank column)
 
 [Submit click] ─► assemble row:
-   { timestamp, w_accuracy, w_contiguity, w_decontam, w_plasmid }
+   { timestamp, w_accuracy, w_contiguity, w_decontam, w_replicon }
    ─► storage.append_response(row) ─► st.toast / st.success
 ```
 
 Saved schema (one row per submission):
-`timestamp, w_accuracy, w_contiguity, w_decontam, w_plasmid`
+`timestamp, w_accuracy, w_contiguity, w_decontam, w_replicon`
 
 ## 8. Leaderboard data — simulated values & metric mapping
 
@@ -142,14 +142,14 @@ the real table; the literal benchmark scores are **not** reused):
 | Assembly Accuracy (Mismatches & Indels) | combined errors/100kbp (mismatches + indels) | lower = better | ~1.5–4.0 |
 | Assembly Contiguity (NGA50) | NGA50-normalised | higher = better | ~0.88–0.97 |
 | Contamination Removal | contamination-count | lower = better | integer 0–3 |
-| Multi-Replicon Recovery (Missed Small Plasmids) | missed-plasmid-count (**simulated**, not in source table) | lower = better | single digit 0–6 |
+| Missed Replicons (Chromosomes & Plasmids) | missed-replicon-count — reference replicons absent from the output assembly (**simulated**, not in source table) | lower = better | single digit 0–5 |
 
 `data.py` stores these raw values; `scoring.normalize_metrics()` converts them to 0–100
 direction-aware scores at runtime. Pipeline names come from the real set
 (`chopper-porechop_abi`, `fastplong-all`, `filtlong-porechop_abi`, `filtlong-untrimmed`,
 `seqkit-dorado`, `unprocessed-dorado`, …). A representative subset (~6–8 pipelines) is seeded
 with **deliberate trade-offs** — e.g. one strong on accuracy but worst on contamination, another
-top NGA50 but missing plasmids — so changing the weights meaningfully reshuffles the ranking.
+top NGA50 but missing replicons — so changing the weights meaningfully reshuffles the ranking.
 
 ## 9. Scoring math (reference)
 
@@ -191,8 +191,6 @@ methodology) in one place without touching the app or storage layers.
   ("community weighting survey, N = …, DOI:…").
 - **Info statement**: brief, non-blocking line on the form (§5). No demographics are collected,
   so responses are non-identifying opinion weights.
-- **Ethics**: confirm with the institution whether an anonymous opinion survey needs an ethics
-  exemption before citing — flagged, not blocking.
 
 ## 13. Dependencies & tooling
 
