@@ -9,6 +9,8 @@ from __future__ import annotations
 from datetime import datetime, timezone
 
 import streamlit as st
+import numpy as np
+import pandas as pd
 
 import data
 import scoring
@@ -80,11 +82,87 @@ def render_sliders() -> dict:
     return _current_weights()
 
 
-def render_leaderboard(weights: dict) -> None:
+def render_calculation_walkthrough(weights: dict) -> None:
     raw = data.get_pipeline_data()
-    normalized = scoring.normalize_metrics(raw)
-    ranked = scoring.score_pipelines(normalized, weights)
-    st.dataframe(ranked, hide_index=True, use_container_width=True)
+    
+    st.markdown("### Interactive Score Calculator")
+    st.caption("Select a pipeline below to see exactly how its score is calculated step-by-step.")
+    selected_pipeline = st.selectbox(
+        "Choose a pipeline to inspect:",
+        raw[data.PIPELINE_COLUMN].tolist(),
+        index=0
+    )
+    
+    # Get raw values for the selected pipeline
+    pipeline_row = raw[raw[data.PIPELINE_COLUMN] == selected_pipeline].iloc[0]
+    
+    # Normalize metrics to get intermediate scores
+    normalized_df = scoring.normalize_metrics(raw)
+    norm_row = normalized_df[normalized_df[data.PIPELINE_COLUMN] == selected_pipeline].iloc[0]
+    
+    # Build a breakdown table
+    breakdown_data = []
+    log_sum = 0.0
+    weight_sum = sum(weights.values())
+    
+    for metric in data.METRICS:
+        m_id = metric["id"]
+        raw_val = pipeline_row[m_id]
+        norm_val = norm_row[m_id]
+        weight = weights[m_id]
+        
+        # Get dataset min/max for display
+        values = raw[m_id].to_numpy(dtype=float)
+        lo, hi = values.min(), values.max()
+        
+        # Log contribution
+        log_contrib = weight * np.log(norm_val)
+        log_sum += log_contrib
+        
+        is_lower = metric["direction"] == "lower"
+        breakdown_data.append({
+            "Metric": metric["label"],
+            "Raw Value": f"{raw_val}",
+            "Min (Best)" if is_lower else "Min (Worst)": f"{lo}",
+            "Max (Worst)" if is_lower else "Max (Best)": f"{hi}",
+            "Normalized Score (0-100)": f"{norm_val:.2f}",
+            "Your Weight": f"{weight}",
+            "Log Contribution": f"{log_contrib:.2f}"
+        })
+        
+    st.dataframe(pd.DataFrame(breakdown_data), hide_index=True, use_container_width=True)
+    
+    st.markdown("#### The Math step-by-step:")
+    if weight_sum <= 0:
+        st.info("Please allocate at least 1 point to calculate scores.")
+        return
+        
+    weighted_log_mean = log_sum / weight_sum
+    final_score = np.exp(weighted_log_mean)
+    
+    # Render with nice math notation
+    terms = []
+    for metric in data.METRICS:
+        m_id = metric["id"]
+        norm_val = norm_row[m_id]
+        weight = weights[m_id]
+        if weight > 0:
+            terms.append(f"{norm_val:.1f}^{{{weight}}}")
+            
+    formula_str = " \\times ".join(terms)
+    if formula_str:
+        st.latex(rf"\text{{Score}} = \left( {formula_str} \right)^{{\frac{{1}}{{{weight_sum}}}}} = {final_score:.2f}")
+    else:
+        st.latex(r"\text{{Score}} = 0")
+        
+    st.markdown(
+        f"""
+        1. **Log-space sum**: Sum of `Weight * ln(Normalized Score)` = `{log_sum:.4f}`
+        2. **Divide by total weight**: `{log_sum:.4f} / {weight_sum}` = `{weighted_log_mean:.4f}`
+        3. **Exponentiate back**: `exp({weighted_log_mean:.4f})` = **`{final_score:.2f}`**
+        """
+    )
+
 
 
 
@@ -176,12 +254,12 @@ def main() -> None:
     else:
         st.warning(f"Unallocated budget: {remaining} — allocate all 100 points to submit.")
 
-    st.subheader("Live leaderboard")
-    st.caption("Re-ranks instantly as you move the sliders.")
+    st.subheader("Interactive Score Walkthrough")
+    st.caption("See how your current weights affect a pipeline's final score.")
     if sum(weights.values()) > 0:
-        render_leaderboard(weights)
+        render_calculation_walkthrough(weights)
     else:
-        st.info("Please allocate at least 1 point to view the leaderboard.")
+        st.info("Please allocate at least 1 point to view the score walkthrough.")
 
     if st.button("Submit Weights to Study", type="primary", disabled=remaining != 0):
         row = {
