@@ -46,6 +46,22 @@ def _current_weights() -> dict:
     return {m["id"]: st.session_state[_weight_key(m["id"])] for m in data.METRICS}
 
 
+def _on_slider_change(metric_id: str) -> None:
+    """Callback to enforce that the sum of all weights never exceeds 100.
+
+    If the user increases a slider beyond the remaining budget, clamp it.
+    """
+    key = _weight_key(metric_id)
+    val = st.session_state[key]
+    other_sum = sum(
+        st.session_state[_weight_key(m["id"])]
+        for m in data.METRICS
+        if m["id"] != metric_id
+    )
+    if val + other_sum > TOTAL_BUDGET:
+        st.session_state[key] = TOTAL_BUDGET - other_sum
+
+
 def render_sliders() -> dict:
     """Render the four budget-capped sliders. Returns the current weights dict."""
     weights = _current_weights()
@@ -56,6 +72,8 @@ def render_sliders() -> dict:
             min_value=0,
             max_value=int(slider_cap(metric_id, weights)),
             key=_weight_key(metric_id),
+            on_change=_on_slider_change,
+            args=(metric_id,),
         )
     return _current_weights()
 
@@ -65,6 +83,7 @@ def render_leaderboard(weights: dict) -> None:
     normalized = scoring.normalize_metrics(raw)
     ranked = scoring.score_pipelines(normalized, weights)
     st.dataframe(ranked, hide_index=True, use_container_width=True)
+
 
 
 def inject_custom_css() -> None:
@@ -157,7 +176,10 @@ def main() -> None:
 
     st.subheader("Live leaderboard")
     st.caption("Re-ranks instantly as you move the sliders.")
-    render_leaderboard(weights)
+    if sum(weights.values()) > 0:
+        render_leaderboard(weights)
+    else:
+        st.info("Please allocate at least 1 point to view the leaderboard.")
 
     if st.button("Submit Weights to Study", type="primary", disabled=remaining != 0):
         row = {
