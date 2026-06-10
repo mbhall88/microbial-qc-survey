@@ -86,19 +86,22 @@ def render_calculation_walkthrough(weights: dict) -> None:
     raw = data.get_pipeline_data()
     
     st.markdown("### Interactive Score Calculator")
-    st.caption("Select a pipeline below to see exactly how its score is calculated step-by-step.")
-    selected_pipeline = st.selectbox(
-        "Choose a pipeline to inspect:",
-        raw[data.PIPELINE_COLUMN].tolist(),
-        index=0
+    st.markdown(
+        """
+        To illustrate how your weightings affect the final score, here is a step-by-step breakdown using a **Sample Assembly** scenario.
+        
+        **Column Guide:**
+        - **Scale (Worst → Best)**: The range of values observed across all pipelines in the benchmark, directed from worst possible to best possible.
+        - **Normalized Score (0–100)**: Re-scales the raw value to a common 0–100 range (100 = best, 1 = worst) so different units can be compared.
+        """
     )
     
-    # Get raw values for the selected pipeline
-    pipeline_row = raw[raw[data.PIPELINE_COLUMN] == selected_pipeline].iloc[0]
+    # Use the first row as our static toy example (chopper-porechop_abi)
+    pipeline_row = raw.iloc[0]
     
     # Normalize metrics to get intermediate scores
     normalized_df = scoring.normalize_metrics(raw)
-    norm_row = normalized_df[normalized_df[data.PIPELINE_COLUMN] == selected_pipeline].iloc[0]
+    norm_row = normalized_df.iloc[0]
     
     # Build a breakdown table
     breakdown_data = []
@@ -111,7 +114,7 @@ def render_calculation_walkthrough(weights: dict) -> None:
         norm_val = norm_row[m_id]
         weight = weights[m_id]
         
-        # Get dataset min/max for display
+        # Get dataset min/max for scale display
         values = raw[m_id].to_numpy(dtype=float)
         lo, hi = values.min(), values.max()
         
@@ -119,15 +122,18 @@ def render_calculation_walkthrough(weights: dict) -> None:
         log_contrib = weight * np.log(norm_val)
         log_sum += log_contrib
         
-        is_lower = metric["direction"] == "lower"
+        # Format Scale (Worst -> Best)
+        if metric["direction"] == "lower":
+            scale_str = f"{hi} → {lo}"
+        else:
+            scale_str = f"{lo} → {hi}"
+            
         breakdown_data.append({
             "Metric": metric["label"],
-            "Raw Value": f"{raw_val}",
-            "Min (Best)" if is_lower else "Min (Worst)": f"{lo}",
-            "Max (Worst)" if is_lower else "Max (Best)": f"{hi}",
+            "Example Raw Value": f"{raw_val}",
+            "Scale (Worst → Best)": scale_str,
             "Normalized Score (0-100)": f"{norm_val:.2f}",
-            "Your Weight": f"{weight}",
-            "Log Contribution": f"{log_contrib:.2f}"
+            "Your Weight": f"{weight}"
         })
         
     st.dataframe(pd.DataFrame(breakdown_data), hide_index=True, use_container_width=True)
