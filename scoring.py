@@ -38,3 +38,31 @@ def normalize_metrics(df: pd.DataFrame) -> pd.DataFrame:
             scores = (hi - values) / span * 100.0
         normalized[col] = np.clip(scores, SCORE_FLOOR, SCORE_CEILING)
     return normalized
+
+
+def score_pipelines(normalized_df: pd.DataFrame, weights: dict) -> pd.DataFrame:
+    """Rank pipelines by the weighted geometric mean of their normalized scores.
+
+    weights maps metric id -> weight (expected to sum to 100). FinalScore =
+    (∏ Sᵢ^wᵢ)^(1/Σwᵢ), computed in log space for numerical stability. Returns a
+    new DataFrame with columns [rank, pipeline, score], sorted by score
+    descending, with a 1-based rank and score rounded to 2 decimals.
+    """
+    weight_values = np.array([weights[m] for m in METRIC_IDS], dtype=float)
+    weight_sum = weight_values.sum()
+    if weight_sum <= 0:
+        raise ValueError("weights must sum to a positive value")
+
+    score_matrix = normalized_df[METRIC_IDS].to_numpy(dtype=float)
+    # (∏ Sᵢ^wᵢ)^(1/Σw) = exp( (Σ wᵢ·ln Sᵢ) / Σw )
+    log_scores = np.log(score_matrix)
+    final_scores = np.exp(log_scores @ weight_values / weight_sum)
+
+    ranked = pd.DataFrame({
+        "pipeline": normalized_df[PIPELINE_COLUMN].to_numpy(),
+        "score": np.round(final_scores, 2),
+    })
+    ranked = ranked.sort_values("score", ascending=False, kind="stable").reset_index(drop=True)
+    ranked.insert(0, "rank", ranked.index + 1)
+    return ranked
+
