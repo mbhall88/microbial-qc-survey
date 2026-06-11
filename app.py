@@ -278,7 +278,7 @@ def render_calculation_walkthrough(weights: dict) -> None:
         )
 
     st.dataframe(
-        pd.DataFrame(breakdown_data), hide_index=True, use_container_width=True
+        pd.DataFrame(breakdown_data), hide_index=True, width="stretch"
     )
 
     st.markdown("#### The Maths step-by-step:")
@@ -451,7 +451,7 @@ def main() -> None:
         st.markdown("---")
         col1, col2, col3 = st.columns([1, 2, 1])
         with col2:
-            st.image("assets/arnold_submit_weights.png", use_container_width=True)
+            st.image("assets/arnold_submit_weights.png", width="stretch")
 
 
 if __name__ == "__main__":
