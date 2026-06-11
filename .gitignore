@@ -5,3 +5,5 @@ venv/
 .streamlit/secrets.toml
 survey_responses.csv
 .DS_Store
+microbial-qc-survey-*.json
+*.json
