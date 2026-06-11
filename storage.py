@@ -72,4 +72,9 @@ def _append_to_sheet(row: dict) -> None:
     )
     client = gspread.authorize(creds)
     sheet = client.open_by_key(st.secrets["sheet_id"]).sheet1
+    
+    # Write header if the sheet is brand new and empty
+    if not sheet.get_all_values():
+        sheet.append_row(RESPONSE_FIELDS)
+        
     sheet.append_row([row.get(field, "") for field in RESPONSE_FIELDS])
